@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>com.datomic</groupId>
+  <artifactId>datomic-pro</artifactId>
+  <versioning>
+    <release>0.9.4324</release>
+    <versions>
+      <version>0.0.43.24</version>
+      <version>0.9.4324</version>
+    </versions>
+    <lastUpdated>20131212195457</lastUpdated>
+  </versioning>
+</metadata>
