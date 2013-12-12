@@ -14,4 +14,7 @@
                  [http-kit "2.1.4"]
                  [korma "0.3.0-RC5"]
                  [com.datomic/datomic-pro "0.9.4324"]]
+
+  :repositories {"local" ~(str (.toURI (java.io.File. "local-repo")))}
+
   :main api.core)
