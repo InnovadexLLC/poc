@@ -5,5 +5,4 @@
   <groupId>com.datomic</groupId>
   <artifactId>datomic-pro</artifactId>
   <version>0.9.4324</version>
-  <description>POM was created from install:install-file</description>
 </project>
