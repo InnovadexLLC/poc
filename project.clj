@@ -1,19 +1,17 @@
-# api
-
-FIXME
-
-## Prerequisites
-
-You will need [Leiningen][1] 1.7.0 or above installed.
-
-[1]: https://github.com/technomancy/leiningen
-
-## Running
-
-To start a web server for the application, run:
-
-    lein ring server
-
-## License
-
-Copyright © 2013 FIXME
+(defproject api "0.1.0-SNAPSHOT"
+  :description "A POC api for ULE data"
+  :url "http://example.com/FIXME"
+  :license {:name ""
+            :url ""}
+  :dependencies [[org.clojure/clojure "1.5.1"]
+                 [ring/ring-json "0.2.0"]
+                 [http-kit "2.0.0"]
+                 [ring/ring-devel "1.1.8"]
+                 [compojure "1.1.5"]
+                 [ring-cors "0.1.0"]
+                 [liberator "0.10.0"]
+                 [sqljdbc4/sqljdbc4 "4.0"]
+                 [http-kit "2.1.4"]
+                 [korma "0.3.0-RC5"]
+                 [com.datomic/datomic-pro "0.9.4324"]]
+  :main api.core)

@@ -24,7 +24,7 @@
 (defentity DimProductContactsExport)
 (defentity DimCertificateExport)
 (defentity DimCompanyExport)
-
+()
 ;;CACHE ENTITIES IN MEMORY TO AVOID DATABASE ROUNDTRIPS
 (def product-basics (select DimProductBasicsExport))
 
