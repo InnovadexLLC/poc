@@ -1,0 +1,40 @@
+[
+;; ;;category
+ {:db/id #db/id[:db.part/db]
+  :db/ident :category/unid
+  :db/valueType :db.type/uuid
+  :db/cardinality :db.cardinality/one
+  :db/unique :db.unique/identity
+  :db/index true
+  :db.install/_attribute :db.part/db}
+
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :category/name
+  :db/valueType :db.type/string
+  :db/cardinality :db.cardinality/one
+  :db/index true
+  :db.install/_attribute :db.part/db}
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :category/label
+  :db/valueType :db.type/ref
+  :db/cardinality :db.cardinality/many
+  :db/index true
+  :db/doc "label for category - ref type to support multiple languages"
+  :db.install/_attribute :db.part/db}
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :category/parent
+  :db/valueType :db.type/ref
+  :db/cardinality :db.cardinality/one
+  :db/index true
+  :db.install/_attribute :db.part/db}
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :category/taxonomy
+  :db/valueType :db.type/ref
+  :db/cardinality :db.cardinality/one
+  :db/index true
+  :db.install/_attribute :db.part/db}
+]

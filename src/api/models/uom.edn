@@ -1,0 +1,29 @@
+[
+;;units of measure - install to enums partition
+;;misc
+[:db/add #db/id[:db.part/enums] :db/ident :uom.misc/each]
+
+;;metric UOM
+
+;;weight
+[:db/add #db/id[:db.part/enums] :db/ident :uom.metric/kg]
+[:db/add #db/id[:db.part/enums] :db/ident :uom.metric/g]
+[:db/add #db/id[:db.part/enums] :db/ident :uom.metric/mg]
+[:db/add #db/id[:db.part/enums] :db/ident :uom.metric/ug]
+[:db/add #db/id[:db.part/enums] :db/ident :uom.metric/pg]
+;;distance
+[:db/add #db/id[:db.part/enums] :db/ident :uom.metric/km]
+[:db/add #db/id[:db.part/enums] :db/ident :uom.metric/m]
+[:db/add #db/id[:db.part/enums] :db/ident :uom.metric/cm]
+[:db/add #db/id[:db.part/enums] :db/ident :uom.metric/mm]
+[:db/add #db/id[:db.part/enums] :db/ident :uom.metric/um]
+[:db/add #db/id[:db.part/enums] :db/ident :uom.metric/pm]
+;;volume
+[:db/add #db/id[:db.part/enums] :db/ident :uom.metric/kl]
+[:db/add #db/id[:db.part/enums] :db/ident :uom.metric/l]
+[:db/add #db/id[:db.part/enums] :db/ident :uom.metric/cl]
+[:db/add #db/id[:db.part/enums] :db/ident :uom.metric/ml]
+[:db/add #db/id[:db.part/enums] :db/ident :uom.metric/ul]
+[:db/add #db/id[:db.part/enums] :db/ident :uom.metric/pl]
+
+]

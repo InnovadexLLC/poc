@@ -1,0 +1,23 @@
+[
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :asset/product-id
+  :db/valueType :db.type/long
+  :db/cardinality :db.cardinality/one
+  :db/index true
+  :db.install/_attribute :db.part/db}
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :asset/type
+  :db/valueType :db.type/string
+  :db/cardinality :db.cardinality/one
+  :db/index true
+  :db.install/_attribute :db.part/db}
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :asset/url
+  :db/valueType :db.type/string
+  :db/cardinality :db.cardinality/one
+  :db/index false
+  :db.install/_attribute :db.part/db}
+]

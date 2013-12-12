@@ -1,0 +1,10 @@
+[
+
+{:db/id #db/id[:db.part/db]
+:db/ident :evaluation/type
+:db/valueType :db.type/ref
+:db/cardinality :db.cardinality/many
+:db/doc "enum value for evaluation type"
+:db.install/_attribute :db.part/db}
+
+]

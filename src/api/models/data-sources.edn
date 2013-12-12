@@ -1,0 +1,29 @@
+[
+;; this sets up enums representing the original source organization for an attribute set
+;; should maybe be installed in the same partition as attribute-sets
+
+;;ule sources
+;;catch all for ule
+[:db/add #db/id[:db.part/enums] :db/ident :organization.ul/ule]
+
+[:db/add #db/id[:db.part/enums] :db/ident :organization.ul/ule.ule]
+[:db/add #db/id[:db.part/enums] :db/ident :organization.ul/ule.ecoINSTITUT]
+[:db/add #db/id[:db.part/enums] :db/ident :organization.ul/ule.ecologo]
+[:db/add #db/id[:db.part/enums] :db/ident :organization.ul/ule.greenguard]
+
+;;ul ps sources
+;;catch all for ps
+[:db/add #db/id[:db.part/enums] :db/ident :organization.ul/ps]
+
+;;individual org. sections e.g.:
+[:db/add #db/id[:db.part/enums] :db/ident :organization.ul/ps.appliances]
+
+;;ul vs sources
+;;catch all for vs
+[:db/add #db/id[:db.part/enums] :db/ident :organization.ul/vs]
+
+[:db/add #db/id[:db.part/enums] :db/ident :organization.ul/vs.str]
+
+;;external sources - could add outside info sources here
+[:db/add #db/id[:db.part/enums] :db/ident :organization.external/octopart]
+]

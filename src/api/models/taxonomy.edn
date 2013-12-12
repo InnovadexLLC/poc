@@ -1,0 +1,13 @@
+[
+;;taxonomies are used to define the business domain a data set 'belongs' to
+;;this should allow us to segment the data for applications later
+
+;;ul taxonomies
+[:db/add #db/id[:db.part/taxonomies] :db/ident :taxonomy.ul/ule]
+[:db/add #db/id[:db.part/taxonomies] :db/ident :taxonomy.ul/ps]
+[:db/add #db/id[:db.part/taxonomies] :db/ident :taxonomy.ul/vs]
+
+;;external taxonomies
+[:db/add #db/id[:db.part/taxonomies] :db/ident :taxonomy.external/gs1]
+
+]

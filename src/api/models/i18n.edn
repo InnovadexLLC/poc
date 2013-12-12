@@ -1,0 +1,15 @@
+[
+;;attributes allow multilanguage support
+
+{:db/id #db/id[:db.part/db]
+:db/ident :i18n/en
+:db/valueType :db.type/string
+:db/cardinality :db.cardinality/one
+:db.install/_attribute :db.part/db}
+
+{:db/id #db/id[:db.part/db]
+:db/ident :i18n/fr
+:db/valueType :db.type/string
+:db/cardinality :db.cardinality/one
+:db.install/_attribute :db.part/db}
+]

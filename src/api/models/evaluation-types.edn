@@ -1,0 +1,25 @@
+;;certification types -- install in enum partition for now
+[
+
+[:db/add #db/id[:db.part/enums] :db/ident :certification.ul.ule/ecoINSTITUT]
+[:db/add #db/id[:db.part/enums] :db/ident :certification.ul.ule/ecologo]
+[:db/add #db/id[:db.part/enums] :db/ident :certification.ul.ule/energy-efficiency]
+[:db/add #db/id[:db.part/enums] :db/ident :certification.ul.ule/greenguard-gold]
+[:db/add #db/id[:db.part/enums] :db/ident :certification.ul.ule/greenguard-certified]
+
+;;claim types
+
+[:db/add #db/id[:db.part/enums] :db/ident :claim.ul.ule/bio-based-material]
+[:db/add #db/id[:db.part/enums] :db/ident :claim.ul.ule/energy-efficiency]
+[:db/add #db/id[:db.part/enums] :db/ident :claim.ul.ule/environmental-product-declaration]
+[:db/add #db/id[:db.part/enums] :db/ident :claim.ul.ule/formaldehyde-free]
+[:db/add #db/id[:db.part/enums] :db/ident :claim.ul.ule/landfill-waste-diversion]
+[:db/add #db/id[:db.part/enums] :db/ident :claim.ul.ule/mold-resistance]
+[:db/add #db/id[:db.part/enums] :db/ident :claim.ul.ule/rapidly-renewable-materials]
+[:db/add #db/id[:db.part/enums] :db/ident :claim.ul.ule/reclamation-program]
+[:db/add #db/id[:db.part/enums] :db/ident :claim.ul.ule/mold-resistance]
+
+;;other services
+[:db/add #db/id[:db.part/enums] :db/ident :service.ul.ule/other-environmental-services-free]
+
+]

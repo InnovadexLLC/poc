@@ -1,0 +1,61 @@
+[
+;edn file for a simple product model based on ule domain
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :product/original-id
+  :db/valueType :db.type/long
+  :db/cardinality :db.cardinality/one
+  :db/index true
+  :db/unique :db.unique/identity
+  :db.install/_attribute :db.part/db}
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :product/name
+  :db/valueType :db.type/string
+  :db/cardinality :db.cardinality/one
+  :db/index true
+  :db.install/_attribute :db.part/db}
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :product/description
+  :db/valueType :db.type/string
+  :db/cardinality :db.cardinality/one
+  :db/index false
+  :db.install/_attribute :db.part/db}
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :product/assets
+  :db/valueType :db.type/ref
+  :db/cardinality :db.cardinality/many
+  :db/index false
+  :db.install/_attribute :db.part/db}
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :product/contacts
+  :db/valueType :db.type/ref
+  :db/cardinality :db.cardinality/many
+  :db/index false
+  :db.install/_attribute :db.part/db}
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :product/attribute-sets
+  :db/valueType :db.type/ref
+  :db/cardinality :db.cardinality/many
+  :db/index false
+  :db.install/_attribute :db.part/db}
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :product/manufacturer
+  :db/valueType :db.type/ref
+  :db/cardinality :db.cardinality/many
+  :db/index false
+  :db.install/_attribute :db.part/db}
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :product/brand
+  :db/valueType :db.type/ref
+  :db/cardinality :db.cardinality/many
+  :db/index false
+  :db.install/_attribute :db.part/db}
+
+]
