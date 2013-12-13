@@ -16,5 +16,5 @@
                  [com.datomic/datomic-free "0.9.4331"]]
 
   :repositories {"local" ~(str (.toURI (java.io.File. "local-repo")))}
-
+  :jvm-opts ["-Xmx4g"]
   :main api.core)
