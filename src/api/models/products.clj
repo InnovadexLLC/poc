@@ -24,7 +24,7 @@
 (defentity DimProductContactsExport)
 (defentity DimCertificateExport)
 (defentity DimCompanyExport)
-()
+
 ;;CACHE ENTITIES IN MEMORY TO AVOID DATABASE ROUNDTRIPS
 (def product-basics (select DimProductBasicsExport))
 
@@ -118,13 +118,13 @@
         final-edn   (concat entity-edn rel-edn)
         ]
     ;;(take 10 final-edn)
-    (d/transact conn final-edn)))
+    (d/transact-async conn final-edn)))
 
 ;;what if we want to add entities to existing database?
 (defn import-companies []
    (let [companies  (generate-temp-ids product-companies :db/id)
          co-edn     (prepare-edn (tag-uuid-values companies :company/uuid) {})]
-     (d/transact conn co-edn)))
+     (d/transact-async conn co-edn)))
 
 ;;now establish a relationship between product and co. -- could be made generic?
 (defn create-pc-relationships []
@@ -137,7 +137,7 @@
                      {:product/original-id :company/product-id}
                      [:pid :cid])
         pc-edn      (prepare-edn pc-rel {:pid :db/id :cid :product/brand})]
-   (d/transact conn pc-edn)))
+   (d/transact-async conn pc-edn)))
 
 ;;scratchpad
 
