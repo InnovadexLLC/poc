@@ -9,8 +9,12 @@
             [compojure.route :as route]
             [compojure.handler :as handler]
             [ring.middleware.reload :as reload]
+            [taoensso.timbre :as timbre]
             [cheshire.core :refer :all]
             [api.models.products :as products]))
+
+;;init timbre
+(timbre/refer-timbre)
 
 (def clients (atom {}))
 
@@ -24,7 +28,9 @@
   (str "hi " name))
 
 (defn get-import-companies []
-  (products/import-companies))
+  (info "starting company import")
+  (products/import-companies)
+  (info "finished company import"))
 
 (defn get-products-bg []
  (generate-string (map #(.touch (d/entity (db conn) (first %)))
@@ -89,7 +95,7 @@
 
   (GET "/api/0.2/products"
        []
-       (get-products-bg))
+       (get-products))
 
   (GET "/api/0.2/products/:id"
        [id]
@@ -124,7 +130,9 @@
 
   (GET "/import/products"
        []
-       (products/import-products))
+       (info "started product import")
+       (products/import-products)
+       (info "finished product import"))
 
   (GET "/import/companies"
        []
@@ -143,7 +151,8 @@
 (defn -main [& args]
   (let [port (Integer/parseInt
                (or (System/getenv "PORT") "8080"))]
-    (run-server application {:port port :join? false})))
+    (run-server application {:port port :join? false})
+    (info "poc server started on port" port)))
 
 ;;scratchpad
 
