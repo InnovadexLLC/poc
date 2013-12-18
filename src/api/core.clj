@@ -18,7 +18,8 @@
 
 (def clients (atom {}))
 
-(def uri "datomic:mem://localhost:4334/platform")
+;;(def uri "datomic:mem://localhost:4334/platform")
+(def uri "datomic:ddb-local://localhost:8000/platform/poc?aws_access_key_id=[fakeaccesskeyid]&aws_secret_key=[fakesecretkey]")
 
 (def conn (d/connect uri))
 

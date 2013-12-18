@@ -43,17 +43,21 @@
 
 ;;CONNECTION STRINGS
 ;;in memory db connection string
-(def uri "datomic:mem://localhost:4334/platform")
+;;(def uri "datomic:mem://localhost:4334/platform")
 
-;;couchbase db connection string
-;;(def uri "datomic:couchbase://127.0.0.1/platformCB/test")
+;;dev (persistent) transactor
+;;(def uri "datomic:dev://localhost:4334/platform")
+
+;;aws ddb-local transactor (persistent)
+(def uri "datomic:ddb-local://localhost:8000/platform/poc?aws_access_key_id=[fakeaccesskeyid]&aws_secret_key=[fakesecretkey]")
 
 ;;INITIALIZE
 
 ;;wipe out previous database
-(d/delete-database uri)
+;;(d/delete-database uri)
+
 ;;create database
-(d/create-database uri)
+;;(d/create-database uri)
 
 ;;CONNECTION
 (def conn (d/connect uri))
@@ -75,8 +79,14 @@
 (install-schema "src/api/models/company-schema.edn" conn)
 
 ;;function to generate temp ids for a collection
-(defn generate-temp-ids [coll, temp-keyword]
-  (map #(into % (clojure.set/rename-keys (dissoc (d/tempid :db.part/user) :part) {:idx temp-keyword})) coll))
+(defn generate-temp-ids [coll]
+ (map #(merge {:db/id (d/tempid :db.part/user)} %) coll)) 
+
+;; (defn generate-temp-ids [coll, temp-keyword] 
+;;   (map 
+;;    #(into % (clojure.set/rename-keys 
+;;              (dissoc (d/tempid :db.part/user) :part) {:idx temp-keyword})) coll))
+
 
 (defn tag-uuid-values [coll, key]
   (pmap #(assoc % key (java.util.UUID/fromString (get % key))) coll))
@@ -126,12 +136,61 @@
          co-edn     (prepare-edn (tag-uuid-values companies :company/uuid) {})]
      (d/transact-async conn co-edn)))
 
+(defn handle-keyword-values
+  "generic function to convert strings to keywords as specified by parameter maps"
+  [coll, keywordize]
+  ;;do stuff
+  coll)
+
+(defn handle-uuid-values [coll, key]
+  (pmap #(assoc % key (java.util.UUID/fromString (get % key))) coll))
+
+
+
+(defn create-entities 
+  "generic function to import entities to datomic instance"
+  [entities, keyword-fields, uuid-fields]
+  
+  ;;manipulate the collection
+  (let [;;1. generate a temp id for every entity
+        id-coll      (generate-temp-ids entities)
+        ;;2. tag specified values as uuids 
+        uuid-coll    (if uuid-fields (handle-uuid-values id-coll uuid-fields) id-coll)
+        ;;3. convert specified values to keywords per datomic schema for entity
+        keyword-coll (if keyword-fields (handle-keyword-values uuid-coll keyword-fields) uuid-coll)
+        ;;4. remove all nil values
+        edn          (remove-nils keyword-coll)]
+    ;;send the values to datomic as a single transaction
+    (d/transact-async conn edn)))
+
+(defn create-relationships [a-join-key b-join-key relation-name]
+ (let [joined-set (d/q '[:find ?ae ?be :in $ ?a-join-key ?b-join-key 
+                         :where [?ae ?a-join-key ?j]  [?be ?b-join-key ?j]] 
+                         (db conn) a-join-key b-join-key)
+       edn        (map #(zipmap [:db/id relation-name] %) joined-set)]
+
+   (d/transact-async conn edn)))
+
+
+
+;; (defn get-entity-id-join-key-map [join-key]
+;;   (map #(zipmap [:entity-key join-key] %) (d/q '[:find ?e ?i :where [?e join-key ?i]]) (db conn)))
+
+
+;; (defn create-relationships [a-join-key b-join-key, relation-name]
+;;   (let [a-entities (get-entity-id-join-key-map a-join-key)
+;;         b-entities (get-entity-id-join-key-map b-join-key)
+;;         ab-join    (clojure.set/join a-entities b-entities {a-join-key b-join-key})
+;;         ab-project (clojure.set/project [])
+;;         edn        
+;;         ] ))
+
 ;;now establish a relationship between product and co. -- could be made generic?
 (defn create-pc-relationships []
   (let [products    (map #(zipmap [:pid :product/original-id] %)
                          (d/q '[:find ?e ?id  :where [?e product/original-id ?id]] (db conn)))
         companies   (map #(zipmap [:cid :company/product-id] %)
-                         (d/q '[:find ?e ?id  :where [?e company/original-id ?id]] (db conn)))
+                         (d/q '[:find ?e ?id  :where [?e company/product-id ?id]] (db conn)))
         pc-rel      (create-product-relationships
                      products companies
                      {:product/original-id :company/product-id}

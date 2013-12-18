@@ -1,5 +1,5 @@
 pom.xml
-
+.gitignore
 /lib/
 /classes/
 /targets/

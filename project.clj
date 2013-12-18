@@ -15,7 +15,7 @@
                  [http-kit "2.1.4"]
                  [korma "0.3.0-RC5"]
                  [com.taoensso/timbre "3.0.0-RC2"]
-                 [com.datomic/datomic-free "0.9.4331"]]
+                 [com.datomic/datomic-pro "0.9.4360"]]
 
   :repositories {"local" ~(str (.toURI (java.io.File. "local-repo")))}
   :jvm-opts ["-Xmx4g"]
