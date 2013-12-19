@@ -10,8 +10,7 @@
             [compojure.handler :as handler]
             [ring.middleware.reload :as reload]
             [taoensso.timbre :as timbre]
-            [cheshire.core :refer :all]
-            [api.models.products :as products]))
+            [cheshire.core :refer :all]))
 
 ;;init timbre
 (timbre/refer-timbre)
@@ -28,27 +27,31 @@
 (defn get-hello [name]
   (str "hi " name))
 
-(defn get-import-companies []
-  (info "starting company import")
-  (products/import-companies)
-  (info "finished company import"))
-
 (defn get-products-bg []
  (generate-string (map #(.touch (d/entity (db conn) (first %)))
-                                (d/q '[:find ?e :where [?e :product/original-id]] (db conn)))))
+                                (d/q '[:find ?e 
+                                       :where [?e :product/original-id]] 
+                                     (db conn)))))
 
 (defn get-companies-bg  []
  (generate-string (map #(.touch (d/entity (db conn) (first %)))
-                                (d/q '[:find ?e :where [?e :company/uuid]] (db conn)))))
+                                (d/q '[:find ?e 
+                                       :where [?e :company/uuid]] 
+                                     (db conn)))))
 
 (defn get-company-by-id [id]
   (generate-string (.touch (d/entity (db conn)
-                    (ffirst (d/q '[:find ?e :in $ ?oid
-                                   :where [?e :company/original-id ?oid]] (db conn) (Integer/parseInt id)))))))
+                    (ffirst (d/q '[:find ?e
+                                   :in $ ?oid
+                                   :where [?e :company/original-id ?oid]] 
+                                 (db conn) (Integer/parseInt id)))))))
+
 (defn get-product-by-id [id]
   (generate-string (.touch (d/entity (db conn)
-                    (ffirst (d/q '[:find ?e :in $ ?oid
-                                   :where [?e :product/original-id ?oid]] (db conn) (Integer/parseInt id)))))))
+                    (ffirst (d/q '[:find ?e 
+                                   :in $ ?oid
+                                   :where [?e :product/original-id ?oid]] 
+                                 (db conn) (Integer/parseInt id)))))))
 
 
 ;; (defn get-products-by-index-key [key]
@@ -82,18 +85,12 @@
 
 (defroutes routes
 
-;;hello
-
-  (GET "/hello" [] "hello world - test2")
-
-  (GET "/function-hello/:name" [name]
-       (get-hello name))
-
-  (GET "/liberator-hello/:name" [name]
+  ;;hello world
+  (GET "/hello/:name" [name]
        (get-liberator-hello name))
+  ;;--------------------------------------------------------------------------------------------
 
-;;products
-
+  ;;products
   (GET "/api/0.2/products"
        []
        (get-products))
@@ -102,46 +99,35 @@
        [id]
        (get-product-by-id id))
 
+  ;;TODO: index function w/partial key lookup
+  ;;TODO: fulltext search?
   ;; (GET "/api/0.2/products/index/:key"
   ;;      [key]
   ;;      (get-products-by-index-key key))
 
+  ;;--------------------------------------------------------------------------------------------
 
-;;companies
-
+  ;;companies
   (GET "/api/0.2/companies"
        []
        (get-companies))
 
   (GET "/api/0.2/companies/:id"
        [id]
-       (get-company-by-id id))
+       (get-company-by-id id)))
 
+
+  ;;TODO: index function w/partial key lookup
+  ;;TODO: fulltext search?
   ;; (GET "/api/0.2/companies/index/:key"
   ;;      [key]
   ;;      (get-companies-by-index-key))
 
-
-;;generics
+  ;;--------------------------------------------------------------------------------------------
+  ;;generics
   ;; (GET "api/0.2/:entity-type/:index-name/:key"
   ;;      [entity-type index-name key]
   ;;      (get-entities-by-index-key entity-type index-name key))
-
-;;imports
-
-  (GET "/import/products"
-       []
-       (info "started product import")
-       (products/import-products)
-       (info "finished product import"))
-
-  (GET "/import/companies"
-       []
-       (get-import-companies))
-
-  (GET "/import/relationships"
-       []
-       (products/create-pc-relationships)))
 
 (def application (-> (handler/site routes)
                      (wrap-params)
@@ -158,4 +144,5 @@
 ;;scratchpad
 
 ;;find all products whose name begins with 'A'
+;;note use of predicate functions - datalog queries can execute arbitrary clojure/java code
 ;;(d/q '[:find ?e ?n ?f :where [?e product/name ?n] [(first ?n) ?f] [(= ?f \A)]] (db conn))
