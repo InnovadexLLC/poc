@@ -1,17 +1,31 @@
 (ns api.models.db
   (:use korma.core
         [korma.db :only (defdb)]
-        [datomic.api :only [db q] :as d])
-  (:require [api.models.ule-connection :as ule]))
+        [datomic.api :only [db q] :as d]))
+  ;;(:require [api.models.ule-connection :as ule]))
 
 ;;DATABASE CONNECTIONS
 ;;TODO: migrate all this to a let form inside a defn?
 
+(def db-spec
+  {:classname "com.microsoft.jdbc.sqlserver.SQLServerDriver"
+   :subprotocol "sqlserver"
+   :user "oli"
+   :password "Fibo112358"
+   :database "productdata"
+   :encrypt true
+   :hostNameInCertificate "*.database.windows.net"
+   :subname "//qb5yrji2xv.database.windows.net"})
+
+
 ;;connection to ULE database
-(defdb uledb ule/db-spec)
+(defdb uledb db-spec)
 
 ;;connection to datomic database (UL Platform)
 (def uri "datomic:mem://localhost:4334/platform")
+
+(d/create-database uri)
+
 (def conn (d/connect uri))
 (def p-db (d/db conn))
 ;;ADAPTERS
@@ -23,9 +37,10 @@
 
 ;;functions to pull categories/subcategories/types out
 (defn get-categories []
- (select DimCategory
-         (modifier "distinct")
-         (fields :category)))
+  (let [categories (select DimCategory
+                           (modifier "distinct")
+                           (fields [:category]))]
+     (clojure.set/rename categories {:category :category/name})))
 
 (defn get-subcategories []
   (select DimCategory
@@ -101,22 +116,3 @@
 ;;        [?e :category/parent ?p]
 ;;        [?p :category/name ?pname]] p-db "Sealer")
 
-
-;;BEGIN EVALUATIONS ADAPTER
-
-;;get a handle on the evalations view
-(defentity DimEvaluationExport)
-
-(def evaluations (select DimEvaluationExport))
-
-;;straightforward import of evaluation types goes here
-
-
-
-;;BEGIN CERTIFICATION AND CLAIMS ADAPTER
-(defentity CertificationClaimsExportView)
-
-;;wrap in a def to avoid nrepl/emacs io costs
-(def certifications&claims (select CertificationClaimsExportView))
-
-;;straightforward import of cerfification data goes here

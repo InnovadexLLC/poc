@@ -24,6 +24,8 @@
 (defentity DimProductContactsExport)
 (defentity DimCertificateExport)
 (defentity DimCompanyExport)
+(defentity DimCategoryExport)
+
 
 ;;CACHE ENTITIES IN MEMORY TO AVOID DATABASE ROUNDTRIPS
 (def product-basics (select DimProductBasicsExport))
@@ -38,8 +40,12 @@
 
 (def product-companies (select DimCompanyExport))
 
+;;functions to pull categories/subcategories/types out
+(def taxonomy-elements (select DimCategoryExport))
+
+                         
 ;;DATOMIC SETUP
-;;TO-DO: move this to own file/lib
+;;TODO: move this to own file/lib
 
 ;;CONNECTION STRINGS
 ;;in memory db connection string
@@ -62,141 +68,128 @@
 ;;CONNECTION
 (def conn (d/connect uri))
 
+
 ;;SCHEMATA
-;;install schema function
-(defn install-schema [file, conn]
+;;install schema utility function
+(defn install-schema [file conn]
   (d/transact conn (read-string(slurp file))))
 
-;;install the base product schema
-(install-schema "src/api/models/product-schema.edn" conn)
-;;install the asset schema
-(install-schema "src/api/models/asset-schema.edn" conn)
-;;install the contact schema
-(install-schema "src/api/models/contact-schema.edn" conn)
-;;install the certificate schema
-(install-schema "src/api/models/attribute-set-schema.edn" conn)
-;;install the company schema
-(install-schema "src/api/models/company-schema.edn" conn)
 
-;;function to generate temp ids for a collection
-(defn generate-temp-ids [coll]
- (map #(merge {:db/id (d/tempid :db.part/user)} %) coll)) 
+(defn initialize-database-schema []
 
-;; (defn generate-temp-ids [coll, temp-keyword] 
-;;   (map 
-;;    #(into % (clojure.set/rename-keys 
-;;              (dissoc (d/tempid :db.part/user) :part) {:idx temp-keyword})) coll))
+  (let [schema-files [;;base product schema
+                      "src/api/models/product-schema.edn" 
+                      ;;asset schema
+                      "src/api/models/asset-schema.edn"
+                      ;;contact schema
+                      "src/api/models/contact-schema.edn"
+                      ;;company schema 
+                      "src/api/models/company-schema.edn"
+                      ;;attribute-sets
+                      "src/api/models/attribute-set-schema.edn"
+                      ;;taxonomy and taxonomy-elements
+                      "src/api/models/taxonomy-schema.edn"
+                      ;;i18n
+                      "src/api/models/i18n-schema.edn"
+                      ]]
+    (map #(install-schema % conn) schema-files)))
 
 
-(defn tag-uuid-values [coll, key]
-  (pmap #(assoc % key (java.util.UUID/fromString (get % key))) coll))
+  ;; ;;install the base product schema
+;;   (install-schemaconn)
+;;   ;;install the asset schema
+;;   (install-schema "src/api/models/asset-schema.edn" conn)
+;;   ;;install the contact schema
+;;   (install-schema "src/api/models/contact-schema.edn" conn)
+;;   ;;install the certificate schema
+;;   (install-schema "src/api/models/attribute-set-schema.edn" conn)
+;;   ;;install the company schema
+;;   (install-schema "src/api/models/company-schema.edn" conn)
+;;   ;;install taxonomy and taxonomy element schemas
+;;   (install-schema )
+;;   ;;basic i18n support
+;;   (install-schema "src/api/models/i18n-schema.edn" conn)
+;; )
 
-(defn create-product-relationships [acoll, bcoll, join-map, projection]
-  (clojure.set/project (clojure.set/join acoll bcoll join-map) projection))
 
-(defn remove-nils [coll]
+(defn inject-tempids 
+  "generates tempids for each entity in an edn collection"
+  [coll]
+  (map #(merge {:db/id (d/tempid :db.part/user)} %) coll)) 
+
+
+(defn handle-nil-values
+  "removes nils from an edn collection prior to transacting with datomic"
+  [coll]
   (map #(into {} (filter second %)) coll))
 
-(defn prepare-edn [coll, rename-map]
-  (map #(clojure.set/rename-keys % rename-map) (remove-nils coll)))
-
-;;DATA
-(defn import-products []
-  (let [basics      (generate-temp-ids product-basics :product/temp-id)
-        assets      (generate-temp-ids product-assets :asset/temp-id)
-        contacts    (generate-temp-ids product-contacts :contact/temp-id)
-        certs       (generate-temp-ids product-certificates :attribute-set/temp-id)
-        ba-rel      (create-product-relationships
-                     basics assets {:product/original-id :asset/product-id}
-                     [:asset/temp-id :product/temp-id])
-        bc-rel      (create-product-relationships
-                     basics contacts {:product/original-id :contact/product-id}
-                     [:contact/temp-id :product/temp-id])
-        bcc-rel     (create-product-relationships
-                     basics certs {:product/original-id :attribute-set/product-id}
-                     [:attribute-set/temp-id :product/temp-id])
-        entity-edn  (prepare-edn (concat basics assets (tag-uuid-values contacts :contact/uuid) (tag-uuid-values certs :attribute-set/uuid))
-                                 {:product/temp-id :db/id,
-                                  :asset/temp-id :db/id,
-                                  :contact/temp-id :db/id,
-                                  :attribute-set/temp-id :db/id})
-        rel-edn     (prepare-edn (concat ba-rel bc-rel bcc-rel)
-                                 {:product/temp-id :db/id,
-                                  :asset/temp-id :product/assets,
-                                  :contact/temp-id :product/contacts,
-                                  :attribute-set/temp-id :product/attribute-sets})
-        final-edn   (concat entity-edn rel-edn)
-        ]
-    ;;(take 10 final-edn)
-    (d/transact-async conn final-edn)))
-
-;;what if we want to add entities to existing database?
-(defn import-companies []
-   (let [companies  (generate-temp-ids product-companies :db/id)
-         co-edn     (prepare-edn (tag-uuid-values companies :company/uuid) {})]
-     (d/transact-async conn co-edn)))
 
 (defn handle-keyword-values
-  "generic function to convert strings to keywords as specified by parameter maps"
+  "converts specified attributes from strings to keywords"
   [coll, keywordize]
   ;;do stuff
   coll)
 
-(defn handle-uuid-values [coll, key]
-  (pmap #(assoc % key (java.util.UUID/fromString (get % key))) coll))
 
+(defn handle-uuid-values
+  "tags specified fields/attributes in edn with type #uuid"
+  [coll, key]
+  (pmap #(assoc % key (java.util.UUID/fromString (get % key))) coll))
 
 
 (defn create-entities 
   "generic function to import entities to datomic instance"
-  [entities, keyword-fields, uuid-fields]
+  [entities keyword-fields  uuid-fields]
   
   ;;manipulate the collection
   (let [;;1. generate a temp id for every entity
-        id-coll      (generate-temp-ids entities)
+        id-coll      (inject-tempids entities)
         ;;2. tag specified values as uuids 
         uuid-coll    (if uuid-fields (handle-uuid-values id-coll uuid-fields) id-coll)
         ;;3. convert specified values to keywords per datomic schema for entity
         keyword-coll (if keyword-fields (handle-keyword-values uuid-coll keyword-fields) uuid-coll)
         ;;4. remove all nil values
-        edn          (remove-nils keyword-coll)]
+        edn          (handle-nil-values keyword-coll)]
     ;;send the values to datomic as a single transaction
     (d/transact-async conn edn)))
 
+
 (defn create-relationships [a-join-key b-join-key relation-name]
- (let [joined-set (d/q '[:find ?ae ?be :in $ ?a-join-key ?b-join-key 
+  (let [joined-set (d/q '[:find ?ae ?be :in $ ?a-join-key ?b-join-key 
                          :where [?ae ?a-join-key ?j]  [?be ?b-join-key ?j]] 
                          (db conn) a-join-key b-join-key)
        edn        (map #(zipmap [:db/id relation-name] %) joined-set)]
 
-   (d/transact-async conn edn)))
+    (d/transact-async conn edn)))
 
 
 
-;; (defn get-entity-id-join-key-map [join-key]
-;;   (map #(zipmap [:entity-key join-key] %) (d/q '[:find ?e ?i :where [?e join-key ?i]]) (db conn)))
+(defn import-data
+  "script to import entities and create relationships"
+  []
+  ;;create entities
+  (create-entities product-basics nil nil)
+  (create-entities product-assets nil nil)
+  (create-entities product-companies nil :company/uuid)
+  (create-entities product-contacts nil :contact/uuid)
+  (create-entities product-certificates nil :attribute-set/uuid)
+  (create-entities taxonomy-elements nil nil)
+  (println "entities created")
 
+  ;;create relationships
 
-;; (defn create-relationships [a-join-key b-join-key, relation-name]
-;;   (let [a-entities (get-entity-id-join-key-map a-join-key)
-;;         b-entities (get-entity-id-join-key-map b-join-key)
-;;         ab-join    (clojure.set/join a-entities b-entities {a-join-key b-join-key})
-;;         ab-project (clojure.set/project [])
-;;         edn        
-;;         ] ))
+  ;;product/asset relationship
+  (create-relationships :product/original-id :asset/product-id :product/assets)
+  ;;product/company relationship
+  (create-relationships :product/original-id :company/product-id :product/brand)
+  ;;product/contact relationship
+  (create-relationships :product/original-id :contact/product-id :product/contacts)
+  ;;product/certification attribute-set relationship
+  (create-relationships :product/original-id :attribute-set/product-id :product/attribute-sets)
 
-;;now establish a relationship between product and co. -- could be made generic?
-(defn create-pc-relationships []
-  (let [products    (map #(zipmap [:pid :product/original-id] %)
-                         (d/q '[:find ?e ?id  :where [?e product/original-id ?id]] (db conn)))
-        companies   (map #(zipmap [:cid :company/product-id] %)
-                         (d/q '[:find ?e ?id  :where [?e company/product-id ?id]] (db conn)))
-        pc-rel      (create-product-relationships
-                     products companies
-                     {:product/original-id :company/product-id}
-                     [:pid :cid])
-        pc-edn      (prepare-edn pc-rel {:pid :db/id :cid :product/brand})]
-   (d/transact-async conn pc-edn)))
+  (println "relationships created"))
+
+;;----------------------------------------------------------------------------------------------
 
 ;;scratchpad
 
