@@ -24,7 +24,10 @@
 (defentity DimProductContactsExport)
 (defentity DimCertificateExport)
 (defentity DimCompanyExport)
+;;taxonomy elements
 (defentity DimCategoryExport)
+;;product/taxonomy & taxonomy/taxonomy element relations
+(defentity DimCategoryRelationshipsExport)
 
 
 ;;CACHE ENTITIES IN MEMORY TO AVOID DATABASE ROUNDTRIPS
@@ -41,8 +44,9 @@
 (def product-companies (select DimCompanyExport))
 
 ;;functions to pull categories/subcategories/types out
-(def taxonomy-elements (select DimCategoryExport))
+(def taxonomic-elements (select DimCategoryExport))
 
+(def taxonomy-classes (select DimCategoryRelationshipsExport))
                          
 ;;DATOMIC SETUP
 ;;TODO: move this to own file/lib
@@ -57,16 +61,19 @@
 ;;aws ddb-local transactor (persistent)
 (def uri "datomic:ddb-local://localhost:8000/platform/poc?aws_access_key_id=[fakeaccesskeyid]&aws_secret_key=[fakesecretkey]")
 
-;;INITIALIZE
-
-;;wipe out previous database
-;;(d/delete-database uri)
-
-;;create database
-;;(d/create-database uri)
-
 ;;CONNECTION
 (def conn (d/connect uri))
+
+;;INITIALIZE
+
+(defn reinitialize-database 
+  "wipe out and recreate the database"
+  [uri]
+  ;;wipe out previous database
+  (d/delete-database uri)
+  ;;create database
+  (d/create-database uri))
+
 
 
 ;;SCHEMATA
@@ -95,40 +102,20 @@
     (map #(install-schema % conn) schema-files)))
 
 
-  ;; ;;install the base product schema
-;;   (install-schemaconn)
-;;   ;;install the asset schema
-;;   (install-schema "src/api/models/asset-schema.edn" conn)
-;;   ;;install the contact schema
-;;   (install-schema "src/api/models/contact-schema.edn" conn)
-;;   ;;install the certificate schema
-;;   (install-schema "src/api/models/attribute-set-schema.edn" conn)
-;;   ;;install the company schema
-;;   (install-schema "src/api/models/company-schema.edn" conn)
-;;   ;;install taxonomy and taxonomy element schemas
-;;   (install-schema )
-;;   ;;basic i18n support
-;;   (install-schema "src/api/models/i18n-schema.edn" conn)
-;; )
-
-
 (defn inject-tempids 
   "generates tempids for each entity in an edn collection"
   [coll]
   (map #(merge {:db/id (d/tempid :db.part/user)} %) coll)) 
 
+(defn inject-squuids 
+  "generates squuids for each entity in a collection - every entity should have a squuid"
+  [coll squuid-key]
+  (map #(merge {squuid-key (d/squuid)} %) coll))
 
 (defn handle-nil-values
   "removes nils from an edn collection prior to transacting with datomic"
   [coll]
   (map #(into {} (filter second %)) coll))
-
-
-(defn handle-keyword-values
-  "converts specified attributes from strings to keywords"
-  [coll, keywordize]
-  ;;do stuff
-  coll)
 
 
 (defn handle-uuid-values
@@ -139,17 +126,15 @@
 
 (defn create-entities 
   "generic function to import entities to datomic instance"
-  [entities keyword-fields  uuid-fields]
+  [entities uuid-fields]
   
   ;;manipulate the collection
   (let [;;1. generate a temp id for every entity
         id-coll      (inject-tempids entities)
         ;;2. tag specified values as uuids 
         uuid-coll    (if uuid-fields (handle-uuid-values id-coll uuid-fields) id-coll)
-        ;;3. convert specified values to keywords per datomic schema for entity
-        keyword-coll (if keyword-fields (handle-keyword-values uuid-coll keyword-fields) uuid-coll)
-        ;;4. remove all nil values
-        edn          (handle-nil-values keyword-coll)]
+        ;;3. remove all nil values
+        edn          (handle-nil-values uuid-coll)]
     ;;send the values to datomic as a single transaction
     (d/transact-async conn edn)))
 
@@ -164,16 +149,19 @@
 
 
 
+
+
 (defn import-data
   "script to import entities and create relationships"
   []
   ;;create entities
-  (create-entities product-basics nil nil)
-  (create-entities product-assets nil nil)
-  (create-entities product-companies nil :company/uuid)
-  (create-entities product-contacts nil :contact/uuid)
-  (create-entities product-certificates nil :attribute-set/uuid)
-  (create-entities taxonomy-elements nil nil)
+  (create-entities product-basics nil)
+  (create-entities product-assets nil)
+  (create-entities product-companies :company/uuid)
+  (create-entities product-contacts :contact/uuid)
+  (create-entities product-certificates :attribute-set/uuid)
+
+  (create-entities taxonomic-elements nil)
   (println "entities created")
 
   ;;create relationships
@@ -189,12 +177,48 @@
 
   (println "relationships created"))
 
-;;----------------------------------------------------------------------------------------------
 
-;;scratchpad
+(defn import-taxonomies [coll]
+  (let [coll (distinct (map #(dissoc % :taxonomy/elements 
+                                     :taxonomic-element/type 
+                                     :taxonomic-element/id
+                                     :product/original-id) coll))]
+    (create-entities coll nil)))
 
-;;get an entity by id
-;;(d/q '[:find ?e :where [?e :product/original-id 25267]] (db conn))
+(defn create-taxonomy-relationships [coll]
+      (let [;; taxonomy->element     (map #(d/q '[:find ?e :in $ ?type ?id 
+            ;;                                    :where 
+            ;;                                    [?e :taxonomic-element/type ?type] 
+            ;;                                    [?e :taxonomic-element/id ?id]] 
+            ;;                                  (db conn) 
+            ;;                                  (:taxonomic-element/type %) 
+            ;;                                  (:taxonomic-element/id %)) coll)
+
+            taxonomy->element     (distinct (map #(dissoc % :product/original-id) coll))
+
+            taxonomy->element     (map #(d/q '[:find ?e ?t :in $ ?type ?eid ?tid
+                                               :where 
+                                               [?e :taxonomic-element/type ?type] 
+                                               [?e :taxonomic-element/id ?eid]
+                                               [?t :taxonomy/id ?tid]] 
+                                             (db conn) 
+                                             (:taxonomic-element/type %) 
+                                             (:taxonomic-element/id %)
+                                             (:taxonomy/id %)) taxonomy->element)
+            ;; taxonomy->element     (map #(merge {:taxonomy/elements %1} %2) taxonomy->element coll) 
+            ;; taxonomy->element     (distinct (map #(dissoc % :product/original-id) taxonomy->element))
+            ;; taxonomy->element     (group-by first taxonomy->element)
+            ]
+        ;;(create-entities taxonomy->element)
+        taxonomy->element
+        ))
+
+    ;;----------------------------------------------------------------------------------------------
+
+    ;;scratchpad
+
+    ;;get an entity by id
+    ;;(d/q '[:find ?e :where [?e :product/original-id 25267]] (db conn)))
 
 ;;reify an entity
 ;; (.touch (d/entity (db conn) (ffirst (d/q '[:find ?e :where [?e :product/original-id 25267]] (db conn)))))

@@ -20,7 +20,7 @@
   :db/ident :product/description
   :db/valueType :db.type/string
   :db/cardinality :db.cardinality/one
-  :db/index false
+  :db/index true
   :db.install/_attribute :db.part/db}
 
  {:db/id #db/id[:db.part/db]
@@ -45,14 +45,21 @@
   :db.install/_attribute :db.part/db}
 
  {:db/id #db/id[:db.part/db]
-  :db/ident :product/manufacturer
+  :db/ident :product/manufacturers
   :db/valueType :db.type/ref
   :db/cardinality :db.cardinality/many
   :db/index false
   :db.install/_attribute :db.part/db}
 
  {:db/id #db/id[:db.part/db]
-  :db/ident :product/brand
+  :db/ident :product/brands
+  :db/valueType :db.type/ref
+  :db/cardinality :db.cardinality/many
+  :db/index false
+  :db.install/_attribute :db.part/db}
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :product/taxonomies
   :db/valueType :db.type/ref
   :db/cardinality :db.cardinality/many
   :db/index false

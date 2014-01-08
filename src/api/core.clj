@@ -145,4 +145,20 @@
 
 ;;find all products whose name begins with 'A'
 ;;note use of predicate functions - datalog queries can execute arbitrary clojure/java code
-;;(d/q '[:find ?e ?n ?f :where [?e product/name ?n] [(first ?n) ?f] [(= ?f \A)]] (db conn))
+(defn qbyname 
+  
+  "find product entity matching qstr - index function"
+  [qstr]
+
+  (d/q '[:find ?e ?n :in $ ?qstr :where 
+         [?e product/name ?n]
+         [(count ?qstr) ?l]
+         [(count ?n) ?nl]
+         [(>= ?nl ?l)]
+         [(subs ?n 0 ?l) ?f]
+         [(= ?f ?qstr)]] (db conn) qstr))
+
+(d/q '[:find ?e ?n ?f :where 
+         [?e product/name ?n] 
+         [(first ?n) ?f]
+         [(= ?f \A)]] (db conn))

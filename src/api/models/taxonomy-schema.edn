@@ -1,29 +1,45 @@
 [
+;;taxonomy entity
+  {:db/id #db/id[:db.part/db]
+  :db/ident :taxonomy/original-id
+  :db/valueType :db.type/long
+  :db/cardinality :db.cardinality/one
+  :db.install/_attribute :db.part/db}
+
  {:db/id #db/id[:db.part/db]
-  :db/ident :taxonomy-element/source
+  :db/ident :taxonomy/elements
+  :db/valueType :db.type/ref
+  :db/cardinality :db.cardinality/many
+  :db/index true
+  :db.install/_attribute :db.part/db}
+
+;;taxonomic element entity
+ {:db/id #db/id[:db.part/db]
+  :db/ident :taxonomic-element/source
   :db/valueType :db.type/keyword
   :db/cardinality :db.cardinality/one
   :db/index true
   :db.install/_attribute :db.part/db}
 
  {:db/id #db/id[:db.part/db]
-  :db/ident :taxonomy-element/id
+  :db/ident :taxonomic-element/id
   :db/valueType :db.type/string
   :db/cardinality :db.cardinality/one
   :db/index true
   :db.install/_attribute :db.part/db}
 
  {:db/id #db/id[:db.part/db]
-  :db/ident :taxonomy-element/level
+  :db/ident :taxonomic-element/level
   :db/valueType :db.type/long
   :db/cardinality :db.cardinality/one
   :db/index false
   :db.install/_attribute :db.part/db}
 
  {:db/id #db/id[:db.part/db]
-  :db/ident :taxonomy-element/type
+  :db/ident :taxonomic-element/type
   :db/valueType :db.type/string
   :db/cardinality :db.cardinality/one
   :db/index false
   :db.install/_attribute :db.part/db}
 ]
+
