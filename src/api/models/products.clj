@@ -196,7 +196,7 @@
 
             taxonomy->element     (distinct (map #(dissoc % :product/original-id) coll))
 
-            taxonomy->element     (map #(d/q '[:find ?e ?t :in $ ?type ?eid ?tid
+            taxonomy->element     (map #(d/q '[:find ?t ?e :in $ ?type ?eid ?tid
                                                :where 
                                                [?e :taxonomic-element/type ?type] 
                                                [?e :taxonomic-element/id ?eid]
@@ -205,12 +205,30 @@
                                              (:taxonomic-element/type %) 
                                              (:taxonomic-element/id %)
                                              (:taxonomy/id %)) taxonomy->element)
+
+            taxonomy->element     (map #(zipmap [:db/id :taxonomy/elements] (first %)) taxonomy->element)
+
+            product->taxonomy     (map #(dissoc % :taxonomy-element/id 
+                                                  :taxonomy-element/type) coll)
+
+            product->taxonomy     (map #(d/q '[:find ?p ?t :in $ ?pid ?tid
+                                               :where
+                                               [?p :product/original-id ?pid]
+                                               [?t :taxonomy/id ?tid]]
+                                             (db conn)
+                                             (:product/original-id %)
+                                             (:taxonomy/id %)) product->taxonomy)
+            product->taxonomy     (map #(zipmap [:db/id :product/taxonomies] (first %)) product->taxonomy)
+
+
             ;; taxonomy->element     (map #(merge {:taxonomy/elements %1} %2) taxonomy->element coll) 
             ;; taxonomy->element     (distinct (map #(dissoc % :product/original-id) taxonomy->element))
             ;; taxonomy->element     (group-by first taxonomy->element)
             ]
-        ;;(create-entities taxonomy->element)
-        taxonomy->element
+        ;; (create-entities taxonomy->element)
+        taxonomy->element       
+        
+        ;; product->taxonomy
         ))
 
     ;;----------------------------------------------------------------------------------------------
