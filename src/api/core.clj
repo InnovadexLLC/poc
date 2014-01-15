@@ -53,22 +53,23 @@
                                    :where [?e :product/original-id ?oid]] 
                                  (db conn) (Integer/parseInt id)))))))
 
+(defn get-entities-bg 
+  "get entities by partial match attribute lookup"
+  [e a v]
+  (let [types     {"products" "product",
+                   "companies" "company",
+                   "contacts" "contact",
+                   "assets" "asset'"}
+        attribute (keyword (clojure.string/join "/" [(get types e) a]))
+        results   (d/q '[:find ?e ?n :in $ ?a ?v :where 
+                         [?e ?a  ?n]
+                         [(count ?v) ?l]
+                         [(count ?n) ?nl]
+                         [(>= ?nl ?l)]
+                         [(subs ?n 0 ?l) ?f]
+                         [(= ?f ?v)]] (db conn) attribute v)]
 
-;; (defn get-products-by-index-key [key]
-;;   (let [entity-ids (d/q '[find ?e in $ ?key :where
-;;                           [?e :product/name ?key]] (db conn) key)
-;;         entities   (map #(.touch (d/entity (db conn) (first %)) entity-ids))])
-
-;;   generate-string entities)
-
-;;todo: generalize pattern by specifying entity to be search
-;;todo: add search field as a parameter
-;; (defn get-entities-by-index-key [type index key]
-;;   (let [field (keyword )])
-
-
-;; )
-
+    (generate-string (map #(.touch (d/entity (db conn) (first %))) results))))
 
 ;;liberator resource definitions  - for production
 (defresource get-liberator-hello [name]
@@ -83,12 +84,21 @@
    :available-media-types ["application/json"]
    :handle-ok (get-products-bg))
 
+(defresource get-entities [e a v]
+  :available-media-types ["application/json"]
+  :handle-ok (get-entities-bg e a v))
+
 (defroutes routes
 
   ;;hello world
   (GET "/hello/:name" [name]
        (get-liberator-hello name))
   ;;--------------------------------------------------------------------------------------------
+
+  ;;generic partial match attribute search
+  (GET "/api/0.2/:e/:a/:v"
+       [e a v] 
+       (get-entities e a v))
 
   ;;products
   (GET "/api/0.2/products"

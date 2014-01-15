@@ -108,7 +108,7 @@
   (map #(merge {:db/id (d/tempid :db.part/user)} %) coll)) 
 
 (defn inject-squuids 
-  "generates squuids for each entity in a collection - every entity should have a squuid"
+  "generates squuids for each entity in a collection - every entity should have a squuid?"
   [coll squuid-key]
   (map #(merge {squuid-key (d/squuid)} %) coll))
 
@@ -169,7 +169,7 @@
   ;;product/asset relationship
   (create-relationships :product/original-id :asset/product-id :product/assets)
   ;;product/company relationship
-  (create-relationships :product/original-id :company/product-id :product/brand)
+  (create-relationships :product/original-id :company/product-id :product/brands)
   ;;product/contact relationship
   (create-relationships :product/original-id :contact/product-id :product/contacts)
   ;;product/certification attribute-set relationship
@@ -180,21 +180,13 @@
 
 (defn import-taxonomies [coll]
   (let [coll (distinct (map #(dissoc % :taxonomy/elements 
-                                     :taxonomic-element/type 
-                                     :taxonomic-element/id
-                                     :product/original-id) coll))]
+                                       :taxonomic-element/type 
+                                       :taxonomic-element/id
+                                       :product/original-id) coll))]
     (create-entities coll nil)))
 
 (defn create-taxonomy-relationships [coll]
-      (let [;; taxonomy->element     (map #(d/q '[:find ?e :in $ ?type ?id 
-            ;;                                    :where 
-            ;;                                    [?e :taxonomic-element/type ?type] 
-            ;;                                    [?e :taxonomic-element/id ?id]] 
-            ;;                                  (db conn) 
-            ;;                                  (:taxonomic-element/type %) 
-            ;;                                  (:taxonomic-element/id %)) coll)
-
-            taxonomy->element     (distinct (map #(dissoc % :product/original-id) coll))
+      (let [taxonomy->element     (distinct (map #(dissoc % :product/original-id) coll))
 
             taxonomy->element     (map #(d/q '[:find ?t ?e :in $ ?type ?eid ?tid
                                                :where 
@@ -206,7 +198,10 @@
                                              (:taxonomic-element/id %)
                                              (:taxonomy/id %)) taxonomy->element)
 
-            taxonomy->element     (map #(zipmap [:db/id :taxonomy/elements] (first %)) taxonomy->element)
+            taxonomy->element     (map #(zipmap [:db/id :taxonomy/elements] (first %)) 
+                                       taxonomy->element)
+            
+            taxonomy->element     (filter #(seq %) taxonomy->element)
 
             product->taxonomy     (map #(dissoc % :taxonomy-element/id 
                                                   :taxonomy-element/type) coll)
@@ -218,18 +213,14 @@
                                              (db conn)
                                              (:product/original-id %)
                                              (:taxonomy/id %)) product->taxonomy)
-            product->taxonomy     (map #(zipmap [:db/id :product/taxonomies] (first %)) product->taxonomy)
 
-
-            ;; taxonomy->element     (map #(merge {:taxonomy/elements %1} %2) taxonomy->element coll) 
-            ;; taxonomy->element     (distinct (map #(dissoc % :product/original-id) taxonomy->element))
-            ;; taxonomy->element     (group-by first taxonomy->element)
-            ]
-        ;; (create-entities taxonomy->element)
-        taxonomy->element       
-        
-        ;; product->taxonomy
-        ))
+            product->taxonomy     (map #(zipmap [:db/id :product/taxonomies] (first %))
+                                       product->taxonomy)
+            
+            product->taxonomy     (filter #(seq %) product->taxonomy)]
+      
+        (d/transact-async conn  taxonomy->element)       
+        (d/transact-async conn  product->taxonomy)))
 
     ;;----------------------------------------------------------------------------------------------
 
@@ -241,7 +232,7 @@
 ;;reify an entity
 ;; (.touch (d/entity (db conn) (ffirst (d/q '[:find ?e :where [?e :product/original-id 25267]] (db conn)))))
 
-;;how many contacts in the database?
+;;how many x in the database?
 ;; (let [entity-ids        (d/q '[:find ?e :where [?e :attribute-set/uuid]] (db conn))
 ;;       entity-count      (count entity-ids)
 ;;       entity-reified    (map #(.touch (d/entity (db conn) (first %))) entity-ids)
