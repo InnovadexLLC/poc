@@ -15,10 +15,11 @@
 ;;init timbre
 (timbre/refer-timbre)
 
-(def clients (atom {}))
-
 ;;(def uri "datomic:mem://localhost:4334/platform")
 (def uri "datomic:ddb-local://localhost:8000/platform/poc?aws_access_key_id=[fakeaccesskeyid]&aws_secret_key=[fakesecretkey]")
+
+(def uri "datomic:ddb://us-west-1/platform/poc?aws_access_key_id=AKIAISAUGSDSCIM7WVCA&aws_secret_key=pElW1XrmFWDEH4T21KVtFT37SZohkRVYza7ecXSF")
+
 
 (def conn (d/connect uri))
 
@@ -56,18 +57,22 @@
 (defn get-entities-bg 
   "get entities by partial match attribute lookup"
   [e a v]
-  (let [types     {"products" "product",
-                   "companies" "company",
-                   "contacts" "contact",
-                   "assets" "asset'"}
-        attribute (keyword (clojure.string/join "/" [(get types e) a]))
-        results   (d/q '[:find ?e ?n :in $ ?a ?v :where 
-                         [?e ?a  ?n]
-                         [(count ?v) ?l]
-                         [(count ?n) ?nl]
-                         [(>= ?nl ?l)]
-                         [(subs ?n 0 ?l) ?f]
-                         [(= ?f ?v)]] (db conn) attribute v)]
+  (let [entities     {"products" "product",
+                      "companies" "company",
+                      "contacts" "contact",
+                      "assets" "asset'"}
+        attribute    (keyword (clojure.string/join "/" [(get entities e) a]))
+        type         (ffirst (d/q '[:find ?type in $ ?attribute :where 
+                                    [?attribute :db/valueType ?t]
+                                    [?t :db/ident ?type]] (db conn) attribute))
+        ;;cast         (cond ())
+        results      (d/q '[:find ?e ?n :in $ ?a ?v :where 
+                            [?e ?a  ?n]
+                            [(count ?v) ?l]
+                            [(count ?n) ?nl]
+                            [(>= ?nl ?l)]
+                            [(subs ?n 0 ?l) ?f]
+                            [(= ?f ?v)]] (db conn) attribute v)]
 
     (generate-string (map #(.touch (d/entity (db conn) (first %))) results))))
 
@@ -97,7 +102,8 @@
 
   ;;generic partial match attribute search
   (GET "/api/0.2/:e/:a/:v"
-       [e a v] 
+       [e a v]
+       
        (get-entities e a v))
 
   ;;products
@@ -109,14 +115,6 @@
        [id]
        (get-product-by-id id))
 
-  ;;TODO: index function w/partial key lookup
-  ;;TODO: fulltext search?
-  ;; (GET "/api/0.2/products/index/:key"
-  ;;      [key]
-  ;;      (get-products-by-index-key key))
-
-  ;;--------------------------------------------------------------------------------------------
-
   ;;companies
   (GET "/api/0.2/companies"
        []
@@ -126,18 +124,6 @@
        [id]
        (get-company-by-id id)))
 
-
-  ;;TODO: index function w/partial key lookup
-  ;;TODO: fulltext search?
-  ;; (GET "/api/0.2/companies/index/:key"
-  ;;      [key]
-  ;;      (get-companies-by-index-key))
-
-  ;;--------------------------------------------------------------------------------------------
-  ;;generics
-  ;; (GET "api/0.2/:entity-type/:index-name/:key"
-  ;;      [entity-type index-name key]
-  ;;      (get-entities-by-index-key entity-type index-name key))
 
 (def application (-> (handler/site routes)
                      (wrap-params)

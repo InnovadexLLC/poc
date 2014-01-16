@@ -61,6 +61,9 @@
 ;;aws ddb-local transactor (persistent)
 (def uri "datomic:ddb-local://localhost:8000/platform/poc?aws_access_key_id=[fakeaccesskeyid]&aws_secret_key=[fakesecretkey]")
 
+;;aws ddb remote
+(def uri "datomic:ddb://us-west-1/platform/poc?aws_access_key_id=AKIAISAUGSDSCIM7WVCA&aws_secret_key=pElW1XrmFWDEH4T21KVtFT37SZohkRVYza7ecXSF")
+
 ;;CONNECTION
 (def conn (d/connect uri))
 
@@ -123,6 +126,11 @@
   [coll, key]
   (pmap #(assoc % key (java.util.UUID/fromString (get % key))) coll))
 
+(defn load-edn [edn]
+  (println "loading...")
+  (Thread/sleep 10000)
+  (d/transact-async conn edn)
+)
 
 (defn create-entities 
   "generic function to import entities to datomic instance"
@@ -134,21 +142,24 @@
         ;;2. tag specified values as uuids 
         uuid-coll    (if uuid-fields (handle-uuid-values id-coll uuid-fields) id-coll)
         ;;3. remove all nil values
-        edn          (handle-nil-values uuid-coll)]
+        edn          (handle-nil-values uuid-coll)
+        edn          (partition 1000 1000 nil edn)]
     ;;send the values to datomic as a single transaction
-    (d/transact-async conn edn)))
+    ;;(d/transact-async conn edn)
+    (map #(load-edn %) edn)
+))
 
 
 (defn create-relationships [a-join-key b-join-key relation-name]
   (let [joined-set (d/q '[:find ?ae ?be :in $ ?a-join-key ?b-join-key 
                          :where [?ae ?a-join-key ?j]  [?be ?b-join-key ?j]] 
                          (db conn) a-join-key b-join-key)
-       edn        (map #(zipmap [:db/id relation-name] %) joined-set)]
+       edn         (map #(zipmap [:db/id relation-name] %) joined-set)
+       edn         (partition 1000 1000 nil edn)]
 
-    (d/transact-async conn edn)))
-
-
-
+    ;; (d/transact-async conn edn)))
+    (map #(load-edn %) edn)
+))
 
 
 (defn import-data
@@ -185,8 +196,9 @@
                                        :product/original-id) coll))]
     (create-entities coll nil)))
 
-(defn create-taxonomy-relationships [coll]
-      (let [taxonomy->element     (distinct (map #(dissoc % :product/original-id) coll))
+(defn import-taxonomy-relationships [coll]
+      (let [
+            taxonomy->element     (distinct (map #(dissoc % :product/original-id) coll))
 
             taxonomy->element     (map #(d/q '[:find ?t ?e :in $ ?type ?eid ?tid
                                                :where 
@@ -220,7 +232,11 @@
             product->taxonomy     (filter #(seq %) product->taxonomy)]
       
         (d/transact-async conn  taxonomy->element)       
-        (d/transact-async conn  product->taxonomy)))
+        ;;(d/transact-async conn  product->taxonomy)
+        ;;(load-edn (partition 1000 1000 nil taxonomy->element))
+        ;;(load-edn (partition 1000 1000 nil product->taxonomy))
+        ;;product->taxonomy
+))
 
     ;;----------------------------------------------------------------------------------------------
 
